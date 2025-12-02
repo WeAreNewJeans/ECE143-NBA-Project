@@ -4,7 +4,7 @@ import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, log_loss
 import os
-from dataloader import NBAGameDataModule
+from dataloaders.dataloader import NBAGameDataModule
 import pickle
 import matplotlib.pyplot as plt
 import matplotlib

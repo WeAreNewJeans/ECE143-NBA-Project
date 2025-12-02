@@ -5,8 +5,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
 import torch
 
-from model_transformer import NBAGamePredictionTransformerModel
-from dataloader import NBAGameDataModule
+from models.model_transformer import NBAGamePredictionTransformerModel
+from dataloaders.dataloader import NBAGameDataModule
 
 
 def train(args):
