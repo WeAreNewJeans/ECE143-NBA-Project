@@ -174,7 +174,7 @@ def main():
     parser.add_argument(
         '--precomputed_dir',
         type=str,
-        default=r'c:\Users\jeffc\Desktop\ECE 143\project\data\precomputed_features_with_teaminfo',
+        default='data/precomputed_features_with_teaminfo',
         help='Directory containing pre-computed features with team info'
     )
 
