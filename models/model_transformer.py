@@ -12,14 +12,11 @@ class PlayerEncoder(nn.Module):
     Input: 20-dim (10 season avg features + 10 recent 5-game avg features)
     Output: 32-dim embedding (increased for transformer)
     """
+
     def __init__(self, input_dim=20, hidden_dim=48, output_dim=32):
         super(PlayerEncoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_dim, output_dim),
-            nn.ReLU()
+            nn.Linear(input_dim, hidden_dim), nn.ReLU(), nn.Dropout(0.3), nn.Linear(hidden_dim, output_dim), nn.ReLU()
         )
 
     def forward(self, x):
@@ -38,6 +35,7 @@ class PositionalEncoding(nn.Module):
 
     Note: Players are sorted by playing time in precompute_features.py
     """
+
     def __init__(self, d_model, max_len=12):
         super(PositionalEncoding, self).__init__()
 
@@ -51,7 +49,7 @@ class PositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
 
         # Register as buffer (not a parameter, but saved with model)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
         """
@@ -60,7 +58,7 @@ class PositionalEncoding(nn.Module):
         Returns:
             shape (batch_size, seq_len, d_model) - with positional encoding added
         """
-        return x + self.pe[:x.size(1), :].unsqueeze(0)
+        return x + self.pe[: x.size(1), :].unsqueeze(0)
 
 
 class TransformerTeamEncoder(nn.Module):
@@ -77,26 +75,27 @@ class TransformerTeamEncoder(nn.Module):
     3. Multi-head self-attention to capture player interactions
     4. Feed-forward network for final team representation
     """
-    def __init__(self, player_input_dim=20, player_embedding_dim=32,
-                 num_players=12, team_output_dim=64,
-                 num_heads=4, num_layers=2, dropout=0.3):
+
+    def __init__(
+        self,
+        player_input_dim=20,
+        player_embedding_dim=32,
+        num_players=12,
+        team_output_dim=64,
+        num_heads=4,
+        num_layers=2,
+        dropout=0.3,
+    ):
         super(TransformerTeamEncoder, self).__init__()
         self.num_players = num_players
         self.player_input_dim = player_input_dim
         self.player_embedding_dim = player_embedding_dim
 
         # Player encoder: 20 -> 48 -> 32
-        self.player_encoder = PlayerEncoder(
-            input_dim=player_input_dim,
-            hidden_dim=48,
-            output_dim=player_embedding_dim
-        )
+        self.player_encoder = PlayerEncoder(input_dim=player_input_dim, hidden_dim=48, output_dim=player_embedding_dim)
 
         # Positional encoding
-        self.positional_encoding = PositionalEncoding(
-            d_model=player_embedding_dim,
-            max_len=num_players
-        )
+        self.positional_encoding = PositionalEncoding(d_model=player_embedding_dim, max_len=num_players)
 
         # Transformer encoder layers
         encoder_layer = nn.TransformerEncoderLayer(
@@ -104,20 +103,15 @@ class TransformerTeamEncoder(nn.Module):
             nhead=num_heads,
             dim_feedforward=player_embedding_dim * 2,  # 64
             dropout=dropout,
-            activation='relu',
-            batch_first=True  # Important: (batch, seq, feature)
+            activation="relu",
+            batch_first=True,  # Important: (batch, seq, feature)
         )
-        self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer,
-            num_layers=num_layers
-        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Team aggregation: Pool transformer output and project to team embedding
         # We'll use mean pooling over all players
         self.team_projection = nn.Sequential(
-            nn.Linear(player_embedding_dim, team_output_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout)
+            nn.Linear(player_embedding_dim, team_output_dim), nn.ReLU(), nn.Dropout(dropout)
         )
 
     def forward(self, x):
@@ -163,6 +157,7 @@ class GamePredictor(nn.Module):
     Takes two team vectors and predicts the win probability of the first team
     Architecture: 128 (2*64) -> 64 -> 32 -> 1
     """
+
     def __init__(self, team_embedding_dim=64):
         super(GamePredictor, self).__init__()
 
@@ -175,7 +170,7 @@ class GamePredictor(nn.Module):
             nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(32, 1)  # Output logits (not probabilities)
+            nn.Linear(32, 1),  # Output logits (not probabilities)
         )
 
     def forward(self, team1_embedding, team2_embedding):
@@ -196,6 +191,7 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
     """
     NBA game prediction model using Transformer for team encoding
     """
+
     def __init__(
         self,
         player_input_dim=20,
@@ -206,7 +202,7 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
         num_transformer_layers=2,
         dropout=0.3,
         learning_rate=1e-3,
-        weight_decay=1e-4
+        weight_decay=1e-4,
     ):
         super(NBAGamePredictionTransformerModel, self).__init__()
         self.save_hyperparameters()
@@ -222,7 +218,7 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
             team_output_dim=team_embedding_dim,
             num_heads=num_heads,
             num_layers=num_transformer_layers,
-            dropout=dropout
+            dropout=dropout,
         )
 
         # Game predictor
@@ -264,8 +260,8 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
         # Log metrics
-        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('train_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_acc", accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
         return loss
 
@@ -285,8 +281,8 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
         # Log metrics
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('val_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_acc", accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
         return loss
 
@@ -306,8 +302,8 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
         # Log metrics
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log('test_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("test_acc", accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
         return loss
 
@@ -321,30 +317,14 @@ class NBAGamePredictionTransformerModel(pl.LightningModule):
 
     def configure_optimizers(self):
         """Configure optimizer with ReduceLROnPlateau scheduler"""
-        optimizer = Adam(
-            self.parameters(),
-            lr=self.learning_rate,
-            weight_decay=self.weight_decay
-        )
+        optimizer = Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
 
         # ReduceLROnPlateau: reduce LR when validation loss plateaus
-        scheduler = ReduceLROnPlateau(
-            optimizer,
-            mode='min',
-            factor=0.5,
-            patience=10,
-            verbose=True,
-            min_lr=1e-6
-        )
+        scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=10, min_lr=1e-6)
 
         return {
-            'optimizer': optimizer,
-            'lr_scheduler': {
-                'scheduler': scheduler,
-                'monitor': 'val_loss',
-                'interval': 'epoch',
-                'frequency': 1
-            }
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": scheduler, "monitor": "val_loss", "interval": "epoch", "frequency": 1},
         }
 
 
@@ -359,7 +339,7 @@ if __name__ == "__main__":
         num_transformer_layers=2,
         dropout=0.3,
         learning_rate=1e-3,
-        weight_decay=1e-4
+        weight_decay=1e-4,
     )
 
     # Test forward pass

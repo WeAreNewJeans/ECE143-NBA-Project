@@ -38,3 +38,5 @@ data/**/*.zip
 .ipynb_checkpoints/
 
 .cache/
+
+LR_results/
