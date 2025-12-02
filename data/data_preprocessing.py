@@ -191,8 +191,8 @@ def preprocess_season_data(input_csv_path, output_csv_path, start_season="2005-2
 
 
 def prepare_team_game_stats(input_path, output_path):
-    input_path = "/datasets/PlayerStatistics.csv"
-    output_path = "/datasets/Season_player_data.csv"
+    input_path = "datasets/PlayerStatistics.csv"
+    output_path = "datasets/Season_player_data.csv"
 
     season_df = preprocess_season_data(
         input_csv_path=input_path,
@@ -200,13 +200,13 @@ def prepare_team_game_stats(input_path, output_path):
         start_season='2005-2006'
     )
 
-    SAVE_PATH_CSV = "/datasets/team_game_stats.csv"
+    SAVE_PATH_CSV = "datasets/team_game_stats.csv"
     team_game_stats.to_csv(SAVE_PATH_CSV, index=False)
     print("Saved CSV to:", SAVE_PATH_CSV)
 
 def prepare_model_data(team_game_stats):
     
-    GAMES_PATH = "/datasets/Games.csv"
+    GAMES_PATH = "datasets/Games.csv"
 
     games_df = pd.read_csv(GAMES_PATH, low_memory=False)
 
@@ -217,7 +217,7 @@ def prepare_model_data(team_game_stats):
     print("\nHead:")
     print(games_df.head())
 
-    games_df = pd.read_csv("/datasets/Games.csv", low_memory=False)
+    games_df = pd.read_csv("datasets/Games.csv", low_memory=False)
 
     games_df["season"] = games_df["gameDateTimeEst"].apply(extract_season_from_date)
 
@@ -232,14 +232,14 @@ def prepare_model_data(team_game_stats):
     print("\nHome win distribution:")
     print(games_df["home_win"].value_counts(normalize=True))
 
-    games_df.to_parquet("/datasets/games_cleaned.parquet", index=False)
-    print("\nSaved cleaned games to /datasets/games_cleaned.parquet")
+    games_df.to_parquet("datasets/games_cleaned.parquet", index=False)
+    print("\nSaved cleaned games to datasets/games_cleaned.parquet")
 
     # Preview
     games_df.head()
 
     # Load cleaned games table
-    games_df = pd.read_parquet("/datasets/games_cleaned.parquet")
+    games_df = pd.read_parquet("datasets/games_cleaned.parquet")
     print("games_df shape:", games_df.shape)
 
     # Basic sanity on team_game_stats
@@ -300,16 +300,16 @@ def prepare_model_data(team_game_stats):
     ]].head())
 
     #Save for later blocks
-    games_model_df.to_parquet("/datasets/games_model_df.parquet", index=False)
-    print("\nSaved games_model_df to /datasets/games_model_df.parquet")
+    games_model_df.to_parquet("datasets/games_model_df.parquet", index=False)
+    print("\nSaved games_model_df to datasets/games_model_df.parquet")
 
 
 if __name__ == "__main__":
     prepare_team_game_stats(
-        input_path="/datasets/PlayerStatistics.csv",
-        output_path="/datasets/Season_player_data.csv"
+        input_path="datasets/PlayerStatistics.csv",
+        output_path="datasets/Season_player_data.csv"
     )
 
-    team_game_stats = pd.read_csv("/datasets/team_game_stats.csv")
+    team_game_stats = pd.read_csv("datasets/team_game_stats.csv")
 
     prepare_model_data(team_game_stats)

@@ -4,7 +4,7 @@ def data_loader():
     """Load or build train/val/test splits for model training/evaluation."""
     
     # 1. Load game-modeling table
-    df = pd.read_parquet("/datasets/games_model_df.parquet")
+    df = pd.read_parquet("datasets/games_model_df.parquet")
     print("Loaded:", df.shape)
 
     # 2. Robust datetime parsing (handles timezone offsets like -04:00)
@@ -49,24 +49,24 @@ def data_loader():
     X_test = test_df[feature_cols]
     y_test = test_df["home_win"].astype(int)
 
-    X_train.to_parquet("/datasets/X_train.parquet")
-    y_train.to_frame(name="home_win").to_parquet("/datasets/y_train.parquet")
+    X_train.to_parquet("datasets/X_train.parquet")
+    y_train.to_frame(name="home_win").to_parquet("datasets/y_train.parquet")
 
-    X_val.to_parquet("/kaggle/working/X_val.parquet")
-    y_val.to_frame(name="home_win").to_parquet("/datasets/y_val.parquet")
+    X_val.to_parquet("datasets/X_val.parquet")
+    y_val.to_frame(name="home_win").to_parquet("datasets/y_val.parquet")
 
-    X_test.to_parquet("/kaggle/working/X_test.parquet")
-    y_test.to_frame(name="home_win").to_parquet("/datsets/y_test.parquet")
+    X_test.to_parquet("datasets/X_test.parquet")
+    y_test.to_frame(name="home_win").to_parquet("datasets/y_test.parquet")
 
     print("\nSaved train/val/test splits.")
 
-    X_train = pd.read_parquet("/datasets/X_train.parquet")
-    y_train = pd.read_parquet("/datasets/y_train.parquet")["home_win"]
+    X_train = pd.read_parquet("datasets/X_train.parquet")
+    y_train = pd.read_parquet("datasets/y_train.parquet")["home_win"]
 
-    X_val = pd.read_parquet("/datasets/X_val.parquet")
-    y_val = pd.read_parquet("/datasets/y_val.parquet")["home_win"]
+    X_val = pd.read_parquet("datasets/X_val.parquet")
+    y_val = pd.read_parquet("datasets/y_val.parquet")["home_win"]
 
-    X_test = pd.read_parquet("/datasets/X_test.parquet")
-    y_test = pd.read_parquet("/datasets/y_test.parquet")["home_win"]
+    X_test = pd.read_parquet("datasets/X_test.parquet")
+    y_test = pd.read_parquet("datasets/y_test.parquet")["home_win"]
     
     return X_train, y_train, X_val, y_val, X_test, y_test
