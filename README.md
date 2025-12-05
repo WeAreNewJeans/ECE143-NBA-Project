@@ -57,6 +57,11 @@ python precompute_features.py
 python precompute_features_with_teaminfo.py
 ```
 
+#### Data Split
+
+- **Train + Validation**: 2000-2024 seasons (90% / 10% split, randomly shuffled)
+- **Test**: 2024-2025 season
+
 ### 3. Training
 
 Return to the project root and train the model:
@@ -77,10 +82,9 @@ python train_transformer.py
 python train_transformer_with_teaminfo.py
 ```
 
-## Data Split
+### 4. Model and Feature Analysis
 
-- **Train + Validation**: 2000-2024 seasons (90% / 10% split, randomly shuffled)
-- **Test**: 2024-2025 season
+run model-feature-analysis.ipynb
 
 
 ## Requirements

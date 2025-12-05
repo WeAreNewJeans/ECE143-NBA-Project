@@ -18,3 +18,4 @@ jupyterlab>=3.0.0
 ipykernel>=6.0.0
 matplotlib>=3.4.0
 seaborn>=0.11.0
+rich>=13.0.0
