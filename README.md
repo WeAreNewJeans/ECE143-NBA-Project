@@ -86,6 +86,12 @@ python train_transformer_with_teaminfo.py
 
 run model-feature-analysis.ipynb
 
+### 5. Players and Teams analyses
+run 
+```bash
+python analyze_players_by_season.py
+python analyze_playoff_teams_tournament.py
+```
 
 ## Requirements
 

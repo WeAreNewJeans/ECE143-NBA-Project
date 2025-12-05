@@ -54,7 +54,7 @@ class TeamEncoder(nn.Module):
         )
 
         # Team aggregation layer - aggregates 12 player embeddings (192-dim) into team vector
-        # Architecture: 192 -> 64 -> 32
+        # 192 -> 64 -> 32
         self.team_aggregator = nn.Sequential(
             nn.Linear(num_players * player_embedding_dim, 64),
             nn.ReLU(),
@@ -76,14 +76,13 @@ class TeamEncoder(nn.Module):
         x = x.view(batch_size, self.num_players, self.player_input_dim)
 
         # Encode each player
-        # Reshape to (batch_size * 12, 20) to pass through player_encoder
+        # Reshape to (batch_size * 12, 20)
         x = x.view(batch_size * self.num_players, self.player_input_dim)
         player_embeddings = self.player_encoder(x)  # (batch_size * 12, player_embedding_dim)
 
         # Reshape back to (batch_size, 12 * player_embedding_dim)
         player_embeddings = player_embeddings.view(batch_size, self.num_players * self.player_embedding_dim)
 
-        # Aggregate into team vector
         team_embedding = self.team_aggregator(player_embeddings)
 
         return team_embedding
@@ -97,9 +96,6 @@ class GamePredictor(nn.Module):
     def __init__(self, team_embedding_dim=32):
         super(GamePredictor, self).__init__()
 
-        # Concatenate two team vectors and make prediction
-        # Note: No Sigmoid here - we use BCEWithLogitsLoss which includes sigmoid
-        # Architecture: 64 -> 32 -> 1
         self.predictor = nn.Sequential(
             nn.Linear(team_embedding_dim * 2, 32),
             nn.ReLU(),
@@ -115,7 +111,6 @@ class GamePredictor(nn.Module):
         Returns:
             shape (batch_size, 1) - win probability of the first team
         """
-        # Concatenate two team vectors
         combined = torch.cat([team1_embedding, team2_embedding], dim=1)
         win_prob = self.predictor(combined)
         return win_prob
@@ -140,7 +135,6 @@ class NBAGamePredictionModel(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
 
-        # Team encoder
         self.team_encoder = TeamEncoder(
             player_input_dim=player_input_dim,
             player_embedding_dim=player_embedding_dim,
@@ -148,10 +142,8 @@ class NBAGamePredictionModel(pl.LightningModule):
             team_output_dim=team_embedding_dim
         )
 
-        # Game predictor
         self.game_predictor = GamePredictor(team_embedding_dim=team_embedding_dim)
 
-        # Loss function - BCEWithLogitsLoss is safe for mixed precision training
         self.criterion = nn.BCEWithLogitsLoss()
 
     def forward(self, team1_features, team2_features):
@@ -162,11 +154,9 @@ class NBAGamePredictionModel(pl.LightningModule):
         Returns:
             shape (batch_size, 1) - win probability of the first team
         """
-        # Encode both teams
         team1_embedding = self.team_encoder(team1_features)
         team2_embedding = self.team_encoder(team2_features)
 
-        # Predict win probability
         win_prob = self.game_predictor(team1_embedding, team2_embedding)
 
         return win_prob
@@ -175,18 +165,14 @@ class NBAGamePredictionModel(pl.LightningModule):
         """Training step"""
         team1_features, team2_features, labels = batch
 
-        # Forward pass (returns logits)
         logits = self(team1_features, team2_features)
 
-        # Compute loss (BCEWithLogitsLoss expects logits and labels)
         loss = self.criterion(logits.squeeze(), labels.squeeze().float())
 
-        # Compute accuracy (convert logits to probabilities with sigmoid)
         probabilities = torch.sigmoid(logits.squeeze())
         predicted_labels = (probabilities > 0.5).float()
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
-        # Log metrics
         self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('train_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -196,18 +182,14 @@ class NBAGamePredictionModel(pl.LightningModule):
         """Validation step"""
         team1_features, team2_features, labels = batch
 
-        # Forward pass (returns logits)
         logits = self(team1_features, team2_features)
 
-        # Compute loss
         loss = self.criterion(logits.squeeze(), labels.squeeze().float())
 
-        # Compute accuracy (convert logits to probabilities with sigmoid)
         probabilities = torch.sigmoid(logits.squeeze())
         predicted_labels = (probabilities > 0.5).float()
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
-        # Log metrics
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('val_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -217,18 +199,14 @@ class NBAGamePredictionModel(pl.LightningModule):
         """Test step"""
         team1_features, team2_features, labels = batch
 
-        # Forward pass (returns logits)
         logits = self(team1_features, team2_features)
 
-        # Compute loss
         loss = self.criterion(logits.squeeze(), labels.squeeze().float())
 
-        # Compute accuracy (convert logits to probabilities with sigmoid)
         probabilities = torch.sigmoid(logits.squeeze())
         predicted_labels = (probabilities > 0.5).float()
         accuracy = (predicted_labels == labels.squeeze()).float().mean()
 
-        # Log metrics
         self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log('test_acc', accuracy, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -266,28 +244,3 @@ class NBAGamePredictionModel(pl.LightningModule):
                 'frequency': 1
             }
         }
-
-
-if __name__ == "__main__":
-    # Create model
-    model = NBAGamePredictionModel(
-        player_input_dim=20,
-        player_embedding_dim=32,
-        num_players=12,
-        team_embedding_dim=128,
-        learning_rate=1e-3
-    )
-
-    # Test forward pass
-    batch_size = 16
-    team1_features = torch.randn(batch_size, 240)  # 12 players * 20 features
-    team2_features = torch.randn(batch_size, 240)
-
-    with torch.no_grad():
-        win_probabilities = model(team1_features, team2_features)
-
-    print(f"Model output shape: {win_probabilities.shape}")  # Should be (16, 1)
-    print(f"Example win probabilities: {win_probabilities[:5].squeeze().tolist()}")
-
-    # Print model architecture
-    print(f"\nTotal model parameters: {sum(p.numel() for p in model.parameters()):,}")

@@ -11,24 +11,13 @@ from dataloaders.dataloader import NBAGameDataModule
 
 def train(args):
     """
-    Train NBA game prediction model with Transformer using pre-computed features.
+    Train NBA game prediction model using pre-computed features.
     """
-    # Set random seed
     pl.seed_everything(args.seed, workers=True)
-
-    # Initialize DataModule with pre-computed features
-    print("=" * 80)
-    print("Initializing DataModule (Pre-computed Features)")
-    print("=" * 80)
 
     datamodule = NBAGameDataModule(
         precomputed_dir=args.precomputed_dir, batch_size=args.batch_size, num_workers=args.num_workers
     )
-
-    # Initialize Transformer Model
-    print("\n" + "=" * 80)
-    print("Initializing Transformer Model")
-    print("=" * 80)
 
     model = NBAGamePredictionTransformerModel(
         player_input_dim=args.player_input_dim,
@@ -42,12 +31,6 @@ def train(args):
         weight_decay=args.weight_decay,
     )
 
-    print(f"\nModel architecture:")
-    print(f"  Total parameters: {sum(p.numel() for p in model.parameters()):,}")
-    print(f"  Transformer heads: {args.num_heads}")
-    print(f"  Transformer layers: {args.num_transformer_layers}")
-
-    # Setup callbacks
     callbacks = []
 
     checkpoint_callback = ModelCheckpoint(
@@ -80,19 +63,12 @@ def train(args):
     progress_bar = RichProgressBar()
     callbacks.append(progress_bar)
 
-    # Setup loggers
     loggers = []
-
     tb_logger = TensorBoardLogger(save_dir=args.log_dir, name="nba_transformer", version=args.experiment_name)
     loggers.append(tb_logger)
 
     csv_logger = CSVLogger(save_dir=args.log_dir, name="nba_transformer", version=args.experiment_name)
     loggers.append(csv_logger)
-
-    # Initialize Trainer
-    print("\n" + "=" * 80)
-    print("Initializing Trainer")
-    print("=" * 80)
 
     trainer = pl.Trainer(
         max_epochs=args.max_epochs,
@@ -117,32 +93,15 @@ def train(args):
     print(f"  Accelerator: {args.accelerator}")
     print(f"  Precision: {args.precision}")
 
-    # GPU info
-    print("\n" + "=" * 80)
-    print("GPU Information")
-    print("=" * 80)
     print(f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"CUDA device: {torch.cuda.get_device_name(0)}")
 
-    # Train
-    print("\n" + "=" * 80)
-    print("Starting Training (Transformer Model)")
-    print("=" * 80)
-
     trainer.fit(model, datamodule)
-
-    # Test
-    print("\n" + "=" * 80)
-    print("Testing Model")
-    print("=" * 80)
 
     trainer.test(model, datamodule)
 
-    # Summary
-    print("\n" + "=" * 80)
-    print("Training Complete!")
-    print("=" * 80)
+    print("Training Complete")
     print(f"\nBest model: {checkpoint_callback.best_model_path}")
     print(f"Best val loss: {checkpoint_callback.best_model_score:.4f}")
 
@@ -163,7 +122,7 @@ def main():
         help="Directory containing pre-computed features",
     )
 
-    # Model hyperparameters (Transformer architecture)
+    # Model hyperparameters
     parser.add_argument("--player_input_dim", type=int, default=20)
     parser.add_argument(
         "--player_embedding_dim", type=int, default=32, help="Player embedding dimension for transformer"
@@ -173,10 +132,10 @@ def main():
         "--team_embedding_dim", type=int, default=64, help="Team embedding dimension after transformer aggregation"
     )
 
-    # Transformer-specific hyperparameters
-    parser.add_argument("--num_heads", type=int, default=4, help="Number of attention heads in transformer")
-    parser.add_argument("--num_transformer_layers", type=int, default=2, help="Number of transformer encoder layers")
-    parser.add_argument("--dropout", type=float, default=0.3, help="Dropout rate for transformer and other layers")
+    # Transformer hyperparameters
+    parser.add_argument("--num_heads", type=int, default=4, help="Number of attention heads")
+    parser.add_argument("--num_transformer_layers", type=int, default=2, help="Number of transformer layers")
+    parser.add_argument("--dropout", type=float, default=0.3, help="Dropout rate")
 
     # Training hyperparameters
     parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
@@ -210,37 +169,21 @@ def main():
 
     # Check if pre-computed features exist
     if not os.path.exists(args.precomputed_dir):
-        print("=" * 80)
         print("ERROR: Pre-computed features not found!")
-        print("=" * 80)
         print(f"\nDirectory not found: {args.precomputed_dir}")
-        print("\nPlease run the following command first:")
-        print("  python precompute_features.py")
-        print("\nThis will pre-compute all features and save them to disk.")
+        print("\nPlease run precompute_features.py first")
         exit(1)
 
-    # Create directories
     os.makedirs(args.log_dir, exist_ok=True)
     os.makedirs(args.checkpoint_dir, exist_ok=True)
 
-    # Print configuration
-    print("\n" + "=" * 80)
-    print("NBA Game Prediction Model Training (Transformer)")
-    print("=" * 80)
     print("\nConfiguration:")
     for arg, value in sorted(vars(args).items()):
         print(f"  {arg}: {value}")
 
-    # Train
     model, trainer, best_model_path = train(args)
 
-    print("\n" + "=" * 80)
-    print("All Done!")
-    print("=" * 80)
-    print(f"\nTo view logs, run:")
-    print(f"  tensorboard --logdir {args.log_dir}")
-    print(f"\nBest model: {best_model_path}")
-
+    print("Done!")
 
 if __name__ == "__main__":
     main()

@@ -40,7 +40,6 @@ def calculate_season_stats(player_games_df):
     Returns:
         Dictionary containing season statistics
     """
-    # Filter out games where player didn't play (numMinutes = 0 or NaN)
     played_games = player_games_df[player_games_df["numMinutes"] > 0].copy()
 
     if len(played_games) == 0:

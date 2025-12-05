@@ -11,9 +11,7 @@ import matplotlib
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 
-matplotlib.use("Agg")  # Use non-interactive backend
-
-# Suppress convergence warnings
+matplotlib.use("Agg")
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
@@ -25,26 +23,18 @@ def train_logistic_baseline(datamodule):
     Args:
         datamodule: NBAGameDataModule instance
     """
-    print("=" * 80)
-    print("Logistic Regression Baseline")
-    print("=" * 80)
 
-    # Setup data
-    print("\nSetting up data...")
     datamodule.setup()
 
-    # Get dataloaders
     train_loader = datamodule.train_dataloader()
     val_loader = datamodule.val_dataloader()
     test_loader = datamodule.test_dataloader()
 
     # Collect training data
-    print("\nCollecting training data...")
     X_train = []
     y_train = []
 
     for team1_features, team2_features, labels in train_loader:
-        # Concatenate team features: [team1(240), team2(240)] = 480-dim
         batch_features = torch.cat([team1_features, team2_features], dim=1)
         X_train.append(batch_features.numpy())
         y_train.append(labels.squeeze().numpy())
@@ -56,7 +46,6 @@ def train_logistic_baseline(datamodule):
     print(f"Training labels shape: {y_train.shape}")
 
     # Collect validation data
-    print("\nCollecting validation data...")
     X_val = []
     y_val = []
 
@@ -71,7 +60,6 @@ def train_logistic_baseline(datamodule):
     print(f"Validation data shape: {X_val.shape}")
 
     # Collect test data
-    print("\nCollecting test data...")
     X_test = []
     y_test = []
 
@@ -85,12 +73,6 @@ def train_logistic_baseline(datamodule):
 
     print(f"Test data shape: {X_test.shape}")
 
-    # Train logistic regression with iterative monitoring
-    print("\n" + "=" * 80)
-    print("Training Logistic Regression...")
-    print("=" * 80)
-
-    # Record training metrics at each checkpoint
     history = {
         "iterations": [],
         "train_loss": [],
@@ -101,37 +83,34 @@ def train_logistic_baseline(datamodule):
         "val_auc": [],
     }
 
-    # Use warm_start for incremental training to track progress
     lr_model = LogisticRegression(
-        max_iter=1,  # Train one iteration at a time
+        max_iter=1,
         random_state=42,
         verbose=0,
-        n_jobs=1,  # Use single process to avoid multiprocessing issues
+        n_jobs=1,
         C=1.0,
         solver="lbfgs",
-        warm_start=True,  # Enable incremental training
+        warm_start=True
     )
 
-    # Iterative training with checkpoints
-    total_iterations = 100  # Total number of iterations
+    total_iterations = 100
     check_points = list(range(1, total_iterations + 1, 1))  # Record every n iteration
 
-    print(f"Training with {total_iterations} iterations, checking every 10 iterations...")
+    print(f"Training with {total_iterations} iterations.")
 
     for iteration in range(1, total_iterations + 1):
         lr_model.max_iter = iteration
         lr_model.fit(X_train, y_train)
 
-        # Record metrics at checkpoints
         if iteration in check_points or iteration == 1:
-            # Training set metrics
+            # Training set
             y_train_pred = lr_model.predict(X_train)
             y_train_proba = lr_model.predict_proba(X_train)
             train_loss = log_loss(y_train, y_train_proba)
             train_acc = accuracy_score(y_train, y_train_pred)
             train_auc = roc_auc_score(y_train, y_train_proba[:, 1])
 
-            # Validation set metrics
+            # Validation set
             y_val_pred = lr_model.predict(X_val)
             y_val_proba = lr_model.predict_proba(X_val)
             val_loss = log_loss(y_val, y_val_proba)
@@ -158,7 +137,6 @@ def train_logistic_baseline(datamodule):
     # Evaluate on training set
     print("\n" + "=" * 80)
     print("Training Set Performance")
-    print("=" * 80)
 
     y_train_pred = lr_model.predict(X_train)
     y_train_proba = lr_model.predict_proba(X_train)[:, 1]
@@ -172,7 +150,6 @@ def train_logistic_baseline(datamodule):
     # Evaluate on validation set
     print("\n" + "=" * 80)
     print("Validation Set Performance")
-    print("=" * 80)
 
     y_val_pred = lr_model.predict(X_val)
     y_val_proba = lr_model.predict_proba(X_val)[:, 1]
@@ -189,7 +166,6 @@ def train_logistic_baseline(datamodule):
     # Evaluate on test set
     print("\n" + "=" * 80)
     print("Test Set Performance")
-    print("=" * 80)
 
     y_test_pred = lr_model.predict(X_test)
     y_test_proba = lr_model.predict_proba(X_test)[:, 1]
@@ -203,29 +179,22 @@ def train_logistic_baseline(datamodule):
     print("\nTest Classification Report:")
     print(classification_report(y_test, y_test_pred, target_names=["Loss", "Win"]))
 
-    # Save model
     model_path = "baseline_logistic_regression.pkl"
-    print(f"\nSaving model to {model_path}...")
+    print(f"\nSaving model to {model_path}.")
     with open(model_path, "wb") as f:
         pickle.dump(lr_model, f)
 
-    print("\n" + "=" * 80)
-    print("Summary")
-    print("=" * 80)
     print(f"Training Accuracy:   {train_acc:.4f}  |  AUC: {train_auc:.4f}")
     print(f"Validation Accuracy: {val_acc:.4f}  |  AUC: {val_auc:.4f}")
     print(f"Test Accuracy:       {test_acc:.4f}  |  AUC: {test_auc:.4f}")
 
-    # Analyze feature importance (top coefficients)
-    print("\n" + "=" * 80)
-    print("Top 20 Most Important Features (by absolute coefficient)")
-    print("=" * 80)
+    print("\nTop 20 Most Important Features (by absolute coefficient)")
 
     coefficients = lr_model.coef_[0]
     feature_importance = np.abs(coefficients)
     top_indices = np.argsort(feature_importance)[-20:][::-1]
 
-    # Feature names (simplified)
+    # Feature names
     stat_names = ["PPG", "RPG", "APG", "SPG", "BPG", "TOV", "MPG", "FG%", "3P%", "FT%"]
 
     for idx in top_indices:
@@ -243,7 +212,6 @@ def train_logistic_baseline(datamodule):
         coef = coefficients[idx]
         print(f"Feature {idx:3d}: {team} Player{player_idx:2d} {stat_type:6s} {stat_name:4s} = {coef:+.4f}")
 
-    # Visualize training progress
     print("\n" + "=" * 80)
     print("Generating Training Visualizations...")
     print("=" * 80)
@@ -281,13 +249,11 @@ def train_logistic_baseline(datamodule):
 
     plt.tight_layout()
 
-    # Save plot
     plot_path = "baseline_logistic_training_curves.png"
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     print(f"\nTraining curves saved to: {plot_path}")
     plt.close()
 
-    # Plot final performance comparison
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
     metrics = ["Accuracy", "AUC-ROC"]
@@ -355,31 +321,22 @@ def train_logistic_baseline(datamodule):
 
 
 if __name__ == "__main__":
-    # Pre-computed features directory (using relative path)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     precomputed_dir = os.path.join(script_dir, "data", "precomputed_features")
 
-    # Check if pre-computed features exist
     if not os.path.exists(precomputed_dir):
         print("=" * 80)
         print("ERROR: Pre-computed features not found!")
         print("=" * 80)
         print(f"\nDirectory not found: {precomputed_dir}")
-        print("\nPlease run the following command first:")
-        print("  cd data && python precompute_features.py")
-        print("\nThis will pre-compute all features and save them to disk.")
+        print("\nPlease run recompute_features.py first.")
         exit(1)
 
-    # Initialize DataModule with pre-computed features
-    print("Initializing DataModule with pre-computed features...")
-    print(f"Using precomputed directory: {precomputed_dir}")
+    print(f"Precomputed directory: {precomputed_dir}")
     datamodule = NBAGameDataModule(
-        precomputed_dir=precomputed_dir, batch_size=256, num_workers=4  # Use multi-core acceleration (Linux)
+        precomputed_dir=precomputed_dir, batch_size=256, num_workers=4
     )
 
-    # Train baseline
     lr_model, metrics = train_logistic_baseline(datamodule)
 
-    print("\n" + "=" * 80)
     print("Baseline Training Complete!")
-    print("=" * 80)
